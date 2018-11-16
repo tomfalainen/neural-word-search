@@ -1,0 +1,13 @@
+*.pyc
+*.so
+*~
+*.pt
+*.h5
+
+
+/checkpoints
+/results
+/results_dtp
+/results_recall
+/results_recall_dtp
+/results_ghosh
