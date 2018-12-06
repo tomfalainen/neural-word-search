@@ -4,11 +4,9 @@ This repository contains the code necessary to reproduce the experiments from th
 
 **Neural Word Search in Historical Manuscript Collections**,
 
-<br>
-[Tomas Wilkinson](http://user.it.uu.se/~tomwi522/)\,
-[Jonas Lindström]\,
-[Anders Brun]
-<br>
+[Tomas Wilkinson](http://user.it.uu.se/~tomwi522/),
+Jonas Lindström\,
+Anders Brun
 
 The paper addresses the problem of **Segmentation-free Word Spotting in Historical Manuscripts**, where a computer detects words on a collection of manuscript pages and allows a user to search within them. 
 
@@ -29,7 +27,7 @@ conda install opencv
 ```
 
 ## Trained models
-You can download models trained on each dataset by following [this]() link and downloading the zip file corresponding to a particular dataset. 
+You can download models trained on each dataset by following [this](https://uppsala.box.com/s/jkdy015j18ke41ed9501kgr2j4zfc7t1) link and downloading the zip file corresponding to a particular dataset. 
 
 ## Evaluating a model
 
