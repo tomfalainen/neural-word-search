@@ -31,17 +31,6 @@ if opt.h5:
 else:
     testset = datasets.Dataset(opt, 'test')
     
-opt.folds = 1
-opt.weights = 'models/dct_washington_fold1_baseline_pretrained_seed123_best_val.pt'
-##%%
-#import matplotlib.pyplot as plt
-#import numpy as np
-#i = 0
-#d1, d2 = testset[i], testset2[i]
-#img1, img2 = d1[0][0], d2[0][0]
-#plt.imshow(np.concatenate([img1[:img2.shape[0]], img2], axis=1))
-##%%
-#raise SystemError
 loader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=0)
 torch.set_default_tensor_type('torch.FloatTensor')
 torch.manual_seed(opt.seed)
