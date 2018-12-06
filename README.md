@@ -12,7 +12,7 @@ The paper addresses the problem of **Segmentation-free Word Spotting in Historic
 
 We provide:
 
-- [Trained model](#trained-model)
+- [Trained model](#trained-models)
 - Instructions for [training a model](#training-a-model) and evaluating on the Washington dataset
 
 
