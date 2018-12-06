@@ -1,13 +1,11 @@
 # neural-word-search
 
-![example](example.png)
-(the greener the box, the higher the rank)
-
 This repository contains the code necessary to reproduce the experiments from the paper 
 
-**[Neural Word Search in Historical Manuscript Collections](https://arxiv.org/abs/1703.07645)**,
+**Neural Word Search in Historical Manuscript Collections**,
+
 <br>
-[Tomas Wilkinson]((http://user.it.uu.se/~tomwi522/)\,
+[Tomas Wilkinson](http://user.it.uu.se/~tomwi522/)\,
 [Jonas Lindström]\,
 [Anders Brun]
 <br>
@@ -19,17 +17,6 @@ We provide:
 - [Trained model](#trained-model)
 - Instructions for [training a model](#training-a-model) and evaluating on the Washington dataset
 
-If you find this code useful in your research, please cite:
-
-```
-@article{wilkinson2017neural,
-  title={Neural Ctrl-F: Segmentation-free Query-by-String Word Spotting in Handwritten Manuscript Collections},
-  author={Wilkinson, Tomas and Lindstr{\"o}m, Jonas and Brun, Anders},
-  journal={arXiv preprint arXiv:1703.07645},
-  year={2017}
-}
-
-```
 
 ## Installation
 The models are implemented in [PyTorch](https://pytorch.org/) using Python 2.7. To install Pytorch, it's easiest to follow the instructions on their website. To use this repository with the least amount of work, it's recommended to use the [Anaconda distribution](https://www.anaconda.com/download/).
