@@ -355,30 +355,9 @@ class Dataset(t_data.Dataset):
         
         H, W = shape
         scale = float(self.image_size) / max(H, W)
-        cgt_boxes = []
-        for box in gt_boxes:
-            x, y = box[0], box[1]
-            w, h = box[2] - box[0], box[3] - box[1]
-            x, y = round(scale*(x-1)+1), round(scale*(y-1)+1)
-            w, h = round(scale*w), round(scale*h)  
-          
-            # clamp to image
-            if x < 0: x = 0
-            if y < 0: y = 0
-            if x > self.max_shape[1] - 1: 
-                x = self.max_shape[1] - 1
-            if y > self.max_shape[0] - 1: 
-                y = self.max_shape[0] - 1
-            if x + w > self.max_shape[1]: 
-                w = self.max_shape[1] - x
-            if y + h > self.max_shape[0]: 
-                h = self.max_shape[0] - y
-                break
-        
-            b = np.asarray([x+np.floor(w/2), y+np.floor(h/2), w, h], dtype=np.int32) # also convert to center-coord oriented
-            cgt_boxes.append(b)
-        
-        gt_boxes = np.array(cgt_boxes)
+        boxes = np.array(gt_boxes)
+        scaled_boxes = torch.from_numpy(np.round(scale * (boxes + 1) - 1))
+        gt_boxes = box_utils.x1y1x2y2_to_xcycwh(scaled_boxes).numpy()
         return canvas, gt_boxes, np.array(gt_embeddings), np.array(gt_labels)
             
     def create_background(self, m, shape, fstd=2, bstd=10):
