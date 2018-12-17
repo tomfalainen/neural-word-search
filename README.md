@@ -2,7 +2,7 @@
 
 This repository contains the code necessary to reproduce the experiments from the paper 
 
-**Neural Word Search in Historical Manuscript Collections**,
+**[Neural Word Search in Historical Manuscript Collections](https://arxiv.org/abs/1812.02771)**,
 
 [Tomas Wilkinson](http://user.it.uu.se/~tomwi522/),
 Jonas Lindström\,
@@ -12,9 +12,19 @@ The paper addresses the problem of **Segmentation-free Word Spotting in Historic
 
 We provide:
 
-- [Trained model](#trained-models)
-- Instructions for [training a model](#training-a-model) and evaluating on the Washington dataset
+- [Trained models](#trained-models) 
+- Instructions for [training a model](#training-a-model) and evaluating on the IAM and Washington datasets
 
+If you find this code useful in your research, please cite:
+
+```
+@article{wilkinson2018neural,
+  title={Neural Word Search in Historical Manuscript Collections},
+  author={Wilkinson, Tomas and Lindstr{\"o}m, Jonas and Brun, Anders},
+  journal={arXiv preprint arXiv:1812.02771},
+  year={2018}
+}
+```
 
 ## Installation
 The models are implemented in [PyTorch](https://pytorch.org/) using Python 2.7. To install Pytorch, it's easiest to follow the instructions on their website. To use this repository with the least amount of work, it's recommended to use the [Anaconda distribution](https://www.anaconda.com/download/).
