@@ -53,6 +53,15 @@ python test_dtp.py -weights models/model_name
 
 There are a few flags relevant to testing in train_opts.py, such as evaluating with 4 folds for the washington benchmarks.
 
+To evaluate the Botany or Konzilsprotokolle datasets run the provided evaluation toolkit (download instructions below)
+
+```
+python botany_konz_eval/hkws16_competition.py -weights models/model_name 
+```
+If you evaluate the Ctrl-F-Mini, use the dtp_only flag. 
+
+If you want to exactly reproduce the results from the paper, download the exact data used [here](https://uppsala.box.com/s/jkdy015j18ke41ed9501kgr2j4zfc7t1) and unzip it in data/reproduce/ and use the reproduce_paper flag 
+
 ## Training a model
 
 To download the IAM datasets, go to [this website](http://www.fki.inf.unibe.ch/databases/iam-handwriting-database) and register. Download and unpack the data by running these commands, but with your own username and passwords
@@ -83,13 +92,60 @@ tar -xzf gw_20p_wannot.tgz
 cd ../../
 ```
 
+For the [botany or konzilsprotokolle datasets](https://www.prhlt.upv.es/contests/icfhr2016-kws/data.html) run
+
+```
+mkdir -p data/botany/
+cd data/botany
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Train_I_PageImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Train_I_WordImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Train_I_XML.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Train_II_PageImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Train_II_XML.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Train_III_PageImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Train_III_XML.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Test_PageImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Test_WordImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Test_QryImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Test_QryStrings.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Botany_Test_GT.zip
+cd ../../
+
+```
+or
+```
+mkdir -p data/konzilsprotokolle/
+cd data/konzilsprotokolle
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Train_I_PageImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Train_I_WordImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Train_I_XML.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Train_II_PageImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Train_II_XML.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Train_III_PageImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Train_III_XML.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Test_PageImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Test_WordImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Test_QryImages.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Test_QryStrings.zip
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/data/Konzilsprotokolle_Test_GT.zip
+cd ../../
+cd botany_konz_eval/
+```
+
+Also download and unzip the evaluation software
+```
+cd botany_konz_eval/
+wget --no-check-certificate https://www.prhlt.upv.es/contests/icfhr2016-kws/software/icfhr16kws_evaluation_toolkit.zip
+unzip icfhr16kws_evaluation_toolkit.zip
+cd ..
+```
+
 Next, you can either pre-augment the datasets and save them to H5 data files, which is quicker if training multiple times on a dataset, or you can skip this step and go directly to training while doing augmentation on the fly, which will be slower if training multiple models (unless you have lots of cpu cores). As of now, training ctrlfnet-mini using on the fly augmentation is not recommended, as it's quite slow to extract dtp proposals every training iteration.
 
 Run 
 
 ```
-python preprocess_h5.py -dataset washington -augment 1
-python preprocess_h5.py -dataset iam -augment 1
+python preprocess_h5.py -dataset washington -augment 1 -suffix augmented
 ```
 
 You are now ready to train a model from scratch. However, we pre-trained models on the IIIT-HWS 10K dataset that we used for initialization. You can download models pretrained on the IIIT-HWS dataset [here](https://uppsala.box.com/s/rx5fm0s7m5q5lpk9wgkvirjc17xkjhgs) and unzip them in the directory models, but you may also train a model yourself by running 

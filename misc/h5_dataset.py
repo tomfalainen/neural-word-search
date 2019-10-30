@@ -7,6 +7,7 @@ Created on Tue Dec 12 22:39:56 2017
 """
 from __future__ import print_function
 import json
+import string
 import h5py
 import utils
 import numpy as np
@@ -22,24 +23,37 @@ class H5Dataset(Dataset):
             self.dataset = utils.getopt(opt, 'val_dataset')
             
         root += '%s/' % self.dataset
-            
         self.debug_max_train_images = utils.getopt(opt, 'debug_max_train_images', -1)
         self.embedding = utils.getopt(opt, 'embedding')
         self.fold = utils.getopt(opt, 'fold')
         self.image_size = opt.image_size
         self.split_num = split
         self.dtp_train = opt.dtp_train
+        self.augment = opt.augment
         self.opt = opt
         num2split = {0:'train', 1:'val', 2:'test'}
         self.split = num2split[split]
         self.train = self.split == 'train'
         self.alphabet = dl.default_alphabet
-        self.data = getattr(dl, 'load_%s' % self.dataset)(fold=self.fold, alphabet=self.alphabet)
-        self.data_split = [d for d in self.data if d['split'] == self.split]
         self.ghosh = opt.ghosh
+        
+        if self.dataset == 'konzilsprotokolle':
+            self.alphabet = '&' + string.digits + string.ascii_lowercase
 
-        self.h5_file = root + self.dataset + '_fold%d.h5' % self.fold
-        self.json_file = root + self.dataset + '_fold%d.json' % self.fold
+        suffix = ''
+        if self.augment:
+            suffix = '_augmented'
+            
+        if self.opt.reproduce_paper:
+            self.h5_file = 'data/reproduce/%s_fold%d.h5' % (self.dataset, self.fold)
+            self.json_file = 'data/reproduce/%s_fold%d.json' % (self.dataset, self.fold)
+            self.data = self._repr_load_data()
+        else:
+            self.data = getattr(dl, 'load_%s' % self.dataset)(fold=self.fold, alphabet=self.alphabet)
+            self.h5_file = root + self.dataset + '%s_fold%d.h5' % (suffix, self.fold)
+            self.json_file = root + self.dataset + '%s_fold%d.json' % (suffix, self.fold)
+            
+        self.data_split = [d for d in self.data if d['split'] == self.split]
         
         if self.dataset != 'iiit_hws':
             self.split_vocab = utils.build_vocab(self.data_split)
@@ -111,6 +125,9 @@ class H5Dataset(Dataset):
         self.original_heights = self.h5_file.get('original_heights').value
         self.original_widths = self.h5_file.get('original_widths').value
         self.split_inds = self.h5_file.get('split').value
+        
+        #dimensionality of the embedding
+        self.embedding_dim = self.word_embedding.shape[1]
   
         #extract image size from dataset
         images_size = self.h5_file.get('images').shape
@@ -140,6 +157,39 @@ class H5Dataset(Dataset):
 
     def get_image_max_size(self):
         return self.max_image_height, self.max_image_width
+    
+    def _repr_load_data(self):
+        with open('data/reproduce/%s_fold%d_data.json' % (self.dataset, self.fold)) as fp:
+            data = json.load(fp)
+            
+        t = []
+        for d in data:
+            for r in d['regions']:
+                t.append(r['label'])
+                
+        v = sorted(list(set(' '.join(t))))
+        
+        if self.dataset == 'konzilsprotokolle':
+            tokens = v[-8:] #'äöüßäéöü'
+            replace = ['A&', 'O&', 'U&', 'b', 'a&', 'e&', 'o&', 'u&']
+            
+        elif self.dataset == 'botany':
+            tokens = [v[-4]] #'£'
+            replace = ['e']
+        else:
+            tokens, replace = [], []
+            
+        for d in data:
+            for r in d['regions']:
+                a = r['label']
+                r['original_label'] = a
+                for token, rep in zip(tokens, replace):
+                    a = a.replace(token, rep)
+                
+                a = a.lower()
+                r['label'] = utils.replace_tokens(a, [c for c in a if c not in self.alphabet])
+            
+        return data
 
     def get_vocab_size(self):
         return self.vocab_size
@@ -169,7 +219,6 @@ class H5Dataset(Dataset):
             ri = index % max_index
 
         else:
-            #pick an index randomly
             ri = np.random.randint(max_index)
   
         ix = split_ix[ri]
@@ -185,15 +234,18 @@ class H5Dataset(Dataset):
         img -= (self.image_mean / 255.0)    # subtract mean
 
         # fetch the corresponding labels array
-        r0 = self.img_to_first_box[ix] # - 1  #for python, start from zero, 
+        r0 = self.img_to_first_box[ix] #- 1  #for python, start from zero, 
         r1 = self.img_to_last_box[ix] #Nothing needed here since lua = inclusive, python exclusive
   
         embeddings = self.word_embedding[r0:r1]
         box_batch = self.boxes[r0:r1].copy()
-#        box_batch[:, :2] -= 1
+        box_batch[:, :2] -= 1
         labels = self.labels[r0:r1]
         C, H, W = img.shape
-    
+        
+        scale = float(1720) / max(H, W)
+        box_batch = self.prep_boxes(box_batch, scale)
+
         #batch the boxes and labels and embeddings
         assert box_batch.ndim == 2
 
@@ -202,20 +254,33 @@ class H5Dataset(Dataset):
         if split == 0:
             out = (img, box_batch, embeddings, labels)
             if self.dtp_train:
-                r0 = self.img_to_first_rp[ix] #- 1 #Same as with img_to_first_box
+                r0 = self.img_to_first_rp[ix] 
                 r1 = self.img_to_last_rp[ix]
                 region_proposals = self.h5_file.get('/region_proposals')[r0:r1].copy()
-#                region_proposals[:, :2] -= 1
+                region_proposals = self.prep_boxes(region_proposals, scale)
                 out += (region_proposals, )
                 
         elif split == 1 or split == 2:
-            r0 = self.img_to_first_rp[ix] - 1 #Same as with img_to_first_box
+            r0 = self.img_to_first_rp[ix]# - 1 #Same as with img_to_first_box
             r1 = self.img_to_last_rp[ix]
             region_proposals = self.h5_file.get('/region_proposals')[r0:r1].copy()
             region_proposals[:, :2] -= 1
+            region_proposals = self.prep_boxes(region_proposals, scale)
             out = img, (oh, ow), box_batch, region_proposals, embeddings, labels
             
         return out
+    
+    def prep_boxes(self, boxes, scale):
+        out = []
+        for box in boxes:
+            x, y = box[0], box[1]
+            w, h = box[2], box[3]
+            x, y = round(scale*(x-1)+1), round(scale*(y-1)+1)
+            w, h = round(scale*w), round(scale*h)  
+            b = [x, y, w, h]
+            out.append(b)
+            
+        return np.array(out)
 
     def __len__(self):
         if self.split_num == 0:

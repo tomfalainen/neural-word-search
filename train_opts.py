@@ -64,6 +64,8 @@ def parse_args():
     parser.add_argument('-folds', default=0, help='multiple folds for testing', type=int)
     parser.add_argument('-save', default=0, help='save test results to json', type=int)
     parser.add_argument('-hyperparam_opt', default=0, help='optimize hyperparams before testing', type=int)
+    parser.add_argument('-nms_max_boxes', default=None, help='max number of boxes to keep for nms', type=int)
+    parser.add_argument('-reproduce_paper', default=0, help='use exact data from paper', type=int)
 
     # Visualization
     parser.add_argument('-print_every', default=200, help='How often to print the latest images training loss.', type=int)
@@ -83,5 +85,8 @@ def parse_args():
     
     if args.val_dataset == '':
         args.val_dataset = args.dataset
+        
+    if args.reproduce_paper:
+        args.h5 = 1
         
     return easydict.EasyDict(vars(args))

@@ -5,6 +5,7 @@ Created on Thu Sep 29 14:47:42 2016
 
 @author: tomas
 """
+import string
 import os
 import argparse
 import copy
@@ -32,11 +33,14 @@ def extract_dtp(datum):
     m = img.mean()
     if datum['id'].lower().find('iam') > -1 or datum['id'].lower().find('iiit_hws') > -1:
         threshold_range = np.array([0.9]) * m
-    else:
+    elif datum['id'].lower().find('washington') > -1:
         threshold_range = np.arange(0.7, 1.01, 0.1) * m
-    C_range=range(3, 50, 5) #horizontal range
-    R_range=range(3, 50, 5) #vertical range
-    region_proposals, _ = dl.find_regions(img, threshold_range, C_range, R_range) 
+    else: #for botany and konzilsprotokolle
+        threshold_range = np.arange(0.6, 0.91, 0.1) * m
+        
+    C_range=range(1, 50, 5) #horizontal range
+    R_range=range(1, 50, 5) #vertical range
+    region_proposals = dl.find_regions(img, threshold_range, C_range, R_range) 
     region_proposals, _ = utils.unique_boxes(region_proposals)
     datum['region_proposals'] = region_proposals.tolist()
 
@@ -128,6 +132,10 @@ def full_page_augment(data, outdir, tparams, num_images=2500, augment=True, rese
                     
                 if y + h >= shape[0]: #done with page?
                     break
+                
+                #can happen for botany
+                if tword.shape[0] > canvas.shape[0] or tword.shape[1] > canvas.shape[1]: 
+                    continue
                 
                 x1, y1, x2, y2 = x, y, x + w, y + h
                 canvas[y1:y2, x1:x2] = tword
@@ -288,7 +296,7 @@ def build_img_idx_to_box_idxs(data, boxes='regions'):
     img_to_first_box[img_idx] = box_idx
     for region in datum[boxes]:
       box_idx += 1
-    img_to_last_box[img_idx] = box_idx - 1 
+    img_to_last_box[img_idx] = box_idx
     img_idx += 1
   
   return img_to_first_box, img_to_last_box
@@ -329,7 +337,7 @@ def add_images(data, h5_file, image_size, max_image_size, num_workers=5):
       image_dset[i, :, :H, :W] = img
       lock.release()
       q.task_done()
-  
+      
   print('adding images to hdf5.... (this might take a while)')
   for i in xrange(num_workers):
     t = Thread(target=worker)
@@ -376,6 +384,9 @@ def create_dataset(dataset, augment, fold=1, reset=False, suffix=''):
     num_workers = 5
     image_size = 1720
     alphabet = dl.default_alphabet
+    if dataset == 'konzilsprotokolle':
+        alphabet = '&' + string.digits + string.ascii_lowercase
+    
     phoc_levels = range(1, 6)
     dataset_full = dataset + '_fold%d' % fold
     augmentation_directory = root + dataset_full + '/'
@@ -429,11 +440,16 @@ def create_dataset(dataset, augment, fold=1, reset=False, suffix=''):
         tparams['keep_size'] = True
         
         #the inplace data also contain the original data
+        if dataset == 'botany' or dataset == 'konzilsprotokolle':
+            tparams['shear'] = (-5, 20)
+            tparams['selem_size'] = (3, 3)
+            
         inplace_data = inplace_augment(data, augmentation_directory, tparams, num_images=num_images/2, reset=reset)
 
+        tparams['shear'] = (-5, 30)
         tparams['rotate'] = (-5, 5)
-        tparams['hpad'] = (0, 12)
-        tparams['vpad'] = (0, 12)
+#        tparams['hpad'] = (0, 12)
+#        tparams['vpad'] = (0, 12)
         tparams['keep_size'] = False
         full_page_data = full_page_augment(data, augmentation_directory, tparams, num_images=num_images/2, reset=reset)
         data += inplace_data + full_page_data 
@@ -474,7 +490,9 @@ def create_dataset(dataset, augment, fold=1, reset=False, suffix=''):
     utils.filter_region_proposals(data, original_heights, original_widths, image_size)
     
     
-    pad_proposals = dataset.find('washington') > -1
+    pad_proposals = dataset.find('washington') > -1 or dataset.find('botany') > -1  \
+                    or dataset.find('konzilsprotokolle') > -1
+                    
     region_proposals = encode_boxes(data, original_heights, original_widths, 
                                     image_size, max_image_size, 'region_proposals', pad_proposals)
     f.create_dataset('region_proposals', data=region_proposals)

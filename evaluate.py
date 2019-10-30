@@ -171,7 +171,7 @@ def postprocessing(features, loader, args, model):
         qbe_queries.append(features[li][4].numpy())
         gt_targets.append(torch.squeeze(data[5]).numpy())
 
-    qbe_queries, qbe_qtargets = loader.dataset.dataset_query_filter(qbe_queries, gt_targets, tensorize=True)
+    qbe_queries, qbe_qtargets, _ = loader.dataset.dataset_query_filter(qbe_queries, gt_targets, gt_targets, tensorize=True)
     gt_targets = torch.from_numpy(np.concatenate(gt_targets, axis=0))
     
     if num_queries < 1:
@@ -249,7 +249,9 @@ def postprocessing(features, loader, args, model):
             recalls(dtp_proposals, gt_boxes, overlap_thresholds, entry, '2_dtp')
             recalls(rpn_proposals, gt_boxes, overlap_thresholds, entry, '2_rpn')
 
-        dets = torch.cat([proposals.float(), scores], 1)   
+#        print proposals.shape, scores.shape
+
+        dets = torch.cat([proposals.float(), scores.unsqueeze(1)], 1)   
         if dets.size(0) <= 1:
             continue
         

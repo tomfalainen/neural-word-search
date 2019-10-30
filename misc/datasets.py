@@ -32,6 +32,12 @@ class Dataset(t_data.Dataset):
             self.alphabet = dl.default_alphabet
         else:
             self.alphabet = alphabet
+            
+        #For backwards compatibility with provided models due to a bug. 
+        #Should be removed if training from scratch.
+        if opt.dataset == 'konzilsprotokolle':
+            import string
+            self.alphabet = '&' + string.digits + string.ascii_lowercase
         
         self.train = split == 'train'
         self.opt = opt
@@ -133,48 +139,58 @@ class Dataset(t_data.Dataset):
                 ind = self.wtoi[r['label']]
                 self.words_by_label[ind].append(word)
                 
-    def dataset_query_filter(self, features, gt_targets, tensorize=False):
+    def dataset_query_filter(self, features, gt_targets, texts, tensorize=False):
         if self.iam:
             assert hasattr(self, 'stopwords'), 'no stopwords loaded'
-            e, l = [], []
+            e, l, t = [], [], []
             for datum, embeddings, labels in zip(self.data_split, features, gt_targets):
                 for r, embedding, label in zip(datum['regions'], embeddings, labels):
                     if r['status'] == 'ok':
                         if self.itow[label] not in self.stopwords:
                             e.append(embedding)
                             l.append(label)
+                            t.append(r['label'])
 
-            e, l = np.array(e), np.array(l)
+            e, l, t = np.array(e), np.array(l), np.array(t)
         else:
-            e, l = np.concatenate(features, 0), np.concatenate(gt_targets, 0)
+            e, l, t = np.concatenate(features, 0), np.concatenate(gt_targets, 0), np.concatenate(texts, 0)
             
         if tensorize:
             e, l = torch.from_numpy(e), torch.from_numpy(l)
         
-        return e, l
+        return e, l, t
     
     def init_queries(self):
-        embeddings, labels = [], []
+        if self.dataset == 'konzilsprotokolle':
+            key = 'original_label'
+        else:
+            key = 'label'
+        
+        embeddings, labels, texts = [], [], []
         for datum in self.data_split:
-            e, l = [], []
+            e, l, t = [], [], []
             for r in datum['regions']:
                 word = r['label']
-                e.append(self.get_emb(word))
-                l.append(self.wtoi[word])
+                if len(word) > 0:
+                    e.append(self.get_emb(word))
+                    l.append(self.wtoi[word])
+                    t.append(r[key])
                         
             embeddings.append(e)
             labels.append(l)
+            texts.append(t)
                         
         if self.iam:
-            self.queries, self.qtargets = self.dataset_query_filter(embeddings, labels)
+            self.queries, self.qtargets, self.qtexts = self.dataset_query_filter(embeddings, labels, texts)
             
         else:
             self.queries = np.concatenate(embeddings, 0)
             self.qtargets = np.concatenate(labels, 0)
+            self.qtexts = np.concatenate(texts, 0)
             
         self.qtargets, inds = np.unique(self.qtargets, return_index=True)
         self.queries = self.queries[inds, :]
-
+        self.qtexts = self.qtexts[inds]
                 
     def get_queries(self, tensorize=False):
         queries = self.queries
@@ -194,7 +210,10 @@ class Dataset(t_data.Dataset):
             scale = float(self.image_size) / max(H, W)
     
             #Needed for not so tightly labeled datasets, like washington
-            if box_type == 'region_proposals' and self.dataset.find('washington') > -1:
+            pad_proposals = self.dataset.find('washington') > -1 or \
+                            self.dataset.find('botany') > -1 or \
+                            self.dataset.find('konzilsprotokolle') > -1
+            if box_type == 'region_proposals' and pad_proposals:
                 datum[box_type] = utils.pad_proposals(datum[box_type], (H, W), 10)
             
             boxes = np.array(datum[box_type])
@@ -343,6 +362,9 @@ class Dataset(t_data.Dataset):
                 
             if y + h > shape[0]: #done with page?
                 break
+            
+            if tword.shape[0] > canvas.shape[0] or tword.shape[1] > canvas.shape[1]: #can happen for botany
+                continue
             
             x1, y1, x2, y2 = x, y, x + w, y + h
             canvas[y1:y2, x1:x2] = tword

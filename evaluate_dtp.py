@@ -97,7 +97,7 @@ def postprocessing(features, loader, args, model):
         qbe_queries.append(features[li][1].numpy())
         gt_targets.append(torch.squeeze(data[5]).numpy())
 
-    qbe_queries, qbe_qtargets = loader.dataset.dataset_query_filter(qbe_queries, gt_targets, tensorize=True)
+    qbe_queries, qbe_qtargets, _ = loader.dataset.dataset_query_filter(qbe_queries, gt_targets, gt_targets, tensorize=True)
     gt_targets = torch.from_numpy(np.concatenate(gt_targets, axis=0))
     
     if num_queries < 1:
