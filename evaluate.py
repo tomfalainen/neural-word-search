@@ -51,6 +51,8 @@ def hyperparam_search(model, valloader, args, opt, score_vars='all'):
             else:
                 score = (rt.mAP_qbe_50 + rt.mAP_qbs_50 + rt.mAP_qbe_25 + rt.mAP_qbs_25) / 4
                 
+            print v, score
+                
             maps.append([rt.mAP_qbe_50, rt.mAP_qbs_50])
             if score > best_score:
                 best_score = score
@@ -255,7 +257,7 @@ def postprocessing(features, loader, args, model):
         if dets.size(0) <= 1:
             continue
         
-        pick = box_utils.nms(dets, score_nms_overlap)
+        pick = box_utils.nms(dets, score_nms_overlap, args.nms_max_boxes)
         tt = torch.zeros(len(dets)).byte().cuda()
         tt[pick] = 1 
 

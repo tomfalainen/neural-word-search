@@ -65,8 +65,7 @@ class CtrlFNet(torch.nn.Module):
         utils.ensureopt(opt, 'box_reg_decay')
         
         self.opt = opt
-        self.emb2desc = {'dct':108, 'phoc':540}
-        self.embedding_dim = self.emb2desc[self.opt.embedding]
+        self.embedding_dim = opt.embedding_dim
 
         #output from bilinear interpolation, ensures that the output from layer4 is 2 x 5
         #TODO: infer one from the other, and also investigate different sizes?

@@ -161,6 +161,24 @@ class H5Dataset(Dataset):
     def _repr_load_data(self):
         with open('data/reproduce/%s_fold%d_data.json' % (self.dataset, self.fold)) as fp:
             data = json.load(fp)
+         
+        if self.dataset == 'washington_small':
+            first = True #Keep the same validation page
+            for datum in data:
+                if datum['split'] == 'train':
+                    datum['split'] = 'test'
+                elif datum['split'] == 'test':
+                    if first:
+                        first = False
+                        continue
+                    else:
+                        datum['split'] = 'train'
+        
+        if self.dataset == 'iam' and self.split == 'val':
+            nval = 10
+            val_inds = [j for j, d in enumerate(data) if d['split'] == 'val']
+            val_inds_remove = val_inds[nval:]
+            data = [d for j, d in enumerate(data) if j not in val_inds_remove]
             
         t = []
         for d in data:

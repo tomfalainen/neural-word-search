@@ -37,6 +37,8 @@ torch.manual_seed(opt.seed)
 torch.cuda.manual_seed(opt.seed)
 torch.cuda.device(opt.gpu)
 
+opt.embedding_dim = testset.embedding_dim
+
 # initialize the Ctrl-F-Net model object
 model = ctrlf.CtrlFNet(opt)
 model.load_weights(opt.weights)
@@ -54,6 +56,7 @@ args.overlap_thresholds = [0.25, 0.5]
 args.rpn_nms_thresh = opt.test_rpn_nms_thresh
 args.numpy = False
 args.num_workers = 6
+args.nms_max_boxes = opt.nms_max_boxes
 
 r_keys = ['3_total_recall_50', '3_total_recall_25']
 

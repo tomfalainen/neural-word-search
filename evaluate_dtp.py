@@ -10,6 +10,7 @@ import numpy as np
 np.errstate(divide='ignore', invalid='ignore')
 import misc.box_utils as box_utils
 from misc.boxIoU import bbox_overlaps
+
 from evaluate import extract_features, calcuate_mAPs, recalls, pairwise_cosine_distances
 
 def hyperparam_search(model, valloader, args, opt, score_vars='all'):
@@ -153,7 +154,7 @@ def postprocessing(features, loader, args, model):
         recalls(dtp_proposals, gt_boxes, overlap_thresholds, entry, '2_total')
         
         dets = torch.cat([dtp_proposals.float(), scores], 1)   
-        pick = box_utils.nms(dets, score_nms_overlap)
+        pick = box_utils.nms(dets, score_nms_overlap, args.nms_max_boxes)
         tt = torch.zeros(len(dets)).byte().cuda()
         tt[pick] = 1 
 

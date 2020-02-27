@@ -68,6 +68,7 @@ args.rpn_nms_thresh = opt.test_rpn_nms_thresh
 args.num_workers = 6
 args.numpy = False
 args.num_workers = 6
+args.nms_max_boxes = opt.nms_max_boxes
 
 trainlog = ''
 start = time.time()

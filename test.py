@@ -27,6 +27,10 @@ opt = parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = str(opt.gpu)
 opt.augment = 0
 dtp_only = opt.dtp_only
+#opt.val_dataset = opt.dataset = 'washington_small'
+opt.reproduce_paper = 1
+opt.h5 = 1
+opt.weights = 'models/ctrlfnet_washington/dct_washington_fold1_dtp_train_cosine_loss_pretrained_seed123_best_val.pt'
 if dtp_only:
     from evaluate_dtp import mAP
 else:
@@ -43,6 +47,8 @@ torch.set_default_tensor_type('torch.FloatTensor')
 torch.manual_seed(opt.seed)
 torch.cuda.manual_seed(opt.seed)
 torch.cuda.device(opt.gpu)
+
+opt.embedding_dim = testset.embedding_dim
 
 # initialize the Ctrl-F-Net model object
 model = ctrlf.CtrlFNet(opt)
@@ -61,6 +67,7 @@ args.overlap_thresholds = [0.25, 0.5]
 args.rpn_nms_thresh = opt.test_rpn_nms_thresh
 args.numpy = False
 args.num_workers = 6
+args.nms_max_boxes = opt.nms_max_boxes
 
 r_keys = ['3_dtp_recall_50', '3_rpn_recall_50', '3_total_recall_50', 
           '3_dtp_recall_25', '3_rpn_recall_25', '3_total_recall_25']
@@ -108,8 +115,8 @@ if opt.folds:
         rts.append(rt)
         rfs.append(rf)
 
-    avg_rts = average_dictionary(rts, keys + r_keys)
-    avg_rfs = average_dictionary(rfs, keys + ['3_total_recall_50', '3_total_recall_25'])
+    avg_rts = average_dictionary(rts, keys + r_keys, False, True)
+    avg_rfs = average_dictionary(rfs, keys + ['3_total_recall_50', '3_total_recall_25'], False, True)
 
 else:     
     log, rf, rt = mAP(model, loader, args, 0)
@@ -119,8 +126,7 @@ else:
     copy_log(rt)
     avg_rts = rt
 
-def final_log(dicts, keys, title):
-    res = average_dictionary(dicts, keys, False, True)
+def final_log(res, keys, title):
     pargs = (res.mAP_qbe_25, res.mAP_qbs_25, res.mR_qbe_25, res.mR_qbs_25)
     s1 = 'QbE mAP: %.1f, QbS mAP: %.1f, QbE mR: %.1f, QbS mR: %.1f, 25%% overlap' % pargs
     pargs = (res.mAP_qbe_50, res.mAP_qbs_50, res.mR_qbe_50, res.mR_qbs_50)
