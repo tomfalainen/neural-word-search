@@ -13,7 +13,7 @@ The paper addresses the problem of **Segmentation-free Word Spotting in Historic
 We provide:
 
 - [Trained models](#trained-models) 
-- Instructions for [training a model](#training-a-model) and evaluating on the IAM and Washington datasets
+- Instructions for [training a model](#training-a-model) and evaluating on the IAM, Washington, Botany, and Konzilsprotokolle datasets
 
 If you find this code useful in your research, please cite:
 
